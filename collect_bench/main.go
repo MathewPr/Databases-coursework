@@ -28,14 +28,11 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// reExecTime matches "Execution Time: 123.456 ms" in EXPLAIN ANALYZE output.
 var reExecTime = regexp.MustCompile(`Execution Time:\s+([\d.]+)\s+ms`)
-
-// ─── Output JSON types ────────────────────────────────────────────────────────
 
 type MeasuredRow struct {
 	Label string  `json:"label"`
-	Ms    float64 `json:"ms"`   // median execution time; -1 if measurement failed
+	Ms    float64 `json:"ms"`
 	Note  string  `json:"note"`
 }
 
@@ -65,11 +62,9 @@ type Report struct {
 	DML         []DMLRow      `json:"dml"`
 }
 
-// ─── Scenario definitions ─────────────────────────────────────────────────────
-
 type variant struct {
 	label string
-	setup []string // SET commands before EXPLAIN ANALYZE
+	setup []string
 	query string
 	note  string
 }
@@ -281,8 +276,6 @@ WHERE lower(email) = lower('user42000@bookstore.example')`,
 	},
 }
 
-// ─── Measurement helpers ──────────────────────────────────────────────────────
-
 func median(s []float64) float64 {
 	if len(s) == 0 {
 		return 0
@@ -297,8 +290,6 @@ func median(s []float64) float64 {
 	return math.Round(c[n/2]*100) / 100
 }
 
-// explainMs runs EXPLAIN (ANALYZE, BUFFERS) `runs` times and returns median
-// execution time parsed from the "Execution Time: X ms" line.
 func explainMs(ctx context.Context, conn *pgx.Conn, setup []string, query string, runs int) (float64, error) {
 	var times []float64
 	for i := 0; i < runs; i++ {
@@ -346,8 +337,6 @@ func resetPlanner(ctx context.Context, conn *pgx.Conn) {
 	}
 }
 
-// ─── Index sizes ──────────────────────────────────────────────────────────────
-
 var customIndexes = []string{
 	"idx_btree_orders_created_at",
 	"idx_btree_orders_status",
@@ -374,7 +363,6 @@ func collectSizes(ctx context.Context, conn *pgx.Conn) []IndexSize {
 	for _, name := range customIndexes {
 		var pretty string
 		var bytes int64
-		// Query by name to avoid error if index doesn't exist.
 		err := conn.QueryRow(ctx, `
 			SELECT pg_size_pretty(pg_relation_size(c.oid)),
 			       pg_relation_size(c.oid)
@@ -391,8 +379,6 @@ func collectSizes(ctx context.Context, conn *pgx.Conn) []IndexSize {
 	return out
 }
 
-// ─── DML overhead ─────────────────────────────────────────────────────────────
-
 func measureInsert(ctx context.Context, conn *pgx.Conn, runs int) float64 {
 	q := `INSERT INTO orders (user_id, status, total_amount, created_at, updated_at)
 SELECT (random()*999999+1)::bigint, 'new', random()*200+1, now(), now()
@@ -406,8 +392,6 @@ FROM generate_series(1,1000)`
 	}
 	return median(times)
 }
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
 
 func main() {
 	dsn := flag.String("dsn", "",
@@ -432,7 +416,6 @@ func main() {
 	}
 	defer conn.Close(ctx)
 
-	// Quick sanity check
 	var tableCount int
 	conn.QueryRow(ctx, "SELECT count(*) FROM orders").Scan(&tableCount) //nolint:errcheck
 	if tableCount == 0 {
@@ -444,7 +427,6 @@ func main() {
 	conn.QueryRow(ctx, "SELECT 'PostgreSQL ' || current_setting('server_version')").Scan(&pgVer) //nolint:errcheck
 	log.Printf("Подключено: %s", pgVer)
 
-	// ── Run scenarios ──────────────────────────────────────────────────────────
 	var scenOuts []ScenarioOut
 	for _, sc := range scenarios {
 		log.Printf("[bench] %s", sc.title)
@@ -468,14 +450,12 @@ func main() {
 		scenOuts = append(scenOuts, out2)
 	}
 
-	// ── Index sizes ────────────────────────────────────────────────────────────
 	log.Println("[sizes] сбор размеров индексов...")
 	idxSizes := collectSizes(ctx, conn)
 	for _, s := range idxSizes {
 		log.Printf("  %-40s %s", s.Name, s.Pretty)
 	}
 
-	// ── DML ───────────────────────────────────────────────────────────────────
 	log.Println("[dml] INSERT 1000 строк со всеми индексами...")
 	insertMs := measureInsert(ctx, conn, *runs)
 	log.Printf("  %.0f ms (медиана)", insertMs)
@@ -489,7 +469,6 @@ func main() {
 		DML:         []DMLRow{{Op: "INSERT 1000 строк (все индексы активны)", WithIdxMs: insertMs}},
 	}
 
-	// ── Write output ───────────────────────────────────────────────────────────
 	if err := os.MkdirAll(filepath.Dir(*outPath), 0o755); err != nil {
 		log.Fatalf("mkdir: %v", err)
 	}
