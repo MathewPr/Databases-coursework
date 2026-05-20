@@ -1,0 +1,238 @@
+{
+  "collected_at": "2026-05-13T20:38:54Z",
+  "pg_version": "PostgreSQL 18.3",
+  "runs": 3,
+  "scenarios": [
+    {
+      "id": "brin_vs_btree",
+      "title": "§1 B-tree vs BRIN: временной ряд",
+      "results": [
+        {
+          "label": "Seq Scan",
+          "ms": 0.02,
+          "note": "Full table scan, 2M строк"
+        },
+        {
+          "label": "Индекс (B-tree или BRIN)",
+          "ms": 0.01,
+          "note": "Планировщик выбирает лучший индекс"
+        }
+      ]
+    },
+    {
+      "id": "hash_vs_btree",
+      "title": "§2 Hash vs B-tree: точечный поиск",
+      "results": [
+        {
+          "label": "Seq Scan",
+          "ms": 0.01,
+          "note": "Full table scan"
+        },
+        {
+          "label": "B-tree (user_id)",
+          "ms": 0.01,
+          "note": "Index Scan → Heap Fetch"
+        },
+        {
+          "label": "Hash (user_id)",
+          "ms": 0.01,
+          "note": "Hash Index Scan"
+        }
+      ]
+    },
+    {
+      "id": "gin_fts",
+      "title": "§3 GIN: полнотекстовый поиск",
+      "results": [
+        {
+          "label": "Seq Scan",
+          "ms": 0.02,
+          "note": "500K строк без GIN"
+        },
+        {
+          "label": "GIN (fts)",
+          "ms": 0.02,
+          "note": "Bitmap Index Scan через GIN"
+        }
+      ]
+    },
+    {
+      "id": "gin_array",
+      "title": "§4 GIN: массивы (tags @\u003e)",
+      "results": [
+        {
+          "label": "Seq Scan",
+          "ms": 0.01,
+          "note": "Seq Scan, 500K строк"
+        },
+        {
+          "label": "GIN (tags @\u003e)",
+          "ms": 0.02,
+          "note": "Bitmap Index Scan через GIN"
+        }
+      ]
+    },
+    {
+      "id": "spgist_inet",
+      "title": "§5 SP-GiST: IP-подсети (\u003c\u003c)",
+      "results": [
+        {
+          "label": "Seq Scan",
+          "ms": 0.04,
+          "note": "Full scan по inet"
+        },
+        {
+          "label": "SP-GiST (inet_ops)",
+          "ms": 0.07,
+          "note": "prefix-tree SP-GiST"
+        }
+      ]
+    },
+    {
+      "id": "partial",
+      "title": "§7 Partial: горячее подмножество",
+      "results": [
+        {
+          "label": "Seq Scan",
+          "ms": 0.01,
+          "note": "Full table scan"
+        },
+        {
+          "label": "Partial index (WHERE status='new')",
+          "ms": 0.02,
+          "note": "Partial B-tree, только 'new' заказы"
+        }
+      ]
+    },
+    {
+      "id": "covering",
+      "title": "§8 Covering (INCLUDE): Index-Only Scan",
+      "results": [
+        {
+          "label": "B-tree + Heap Fetch",
+          "ms": 0.01,
+          "note": "Index Scan + обращение к heap"
+        },
+        {
+          "label": "INCLUDE → Index-Only Scan",
+          "ms": 0.01,
+          "note": "heap не читается"
+        }
+      ]
+    },
+    {
+      "id": "functional",
+      "title": "§9 Functional: lower(email)",
+      "results": [
+        {
+          "label": "Seq Scan",
+          "ms": 0.02,
+          "note": "lower() для каждой из 1M строк"
+        },
+        {
+          "label": "Functional index (lower(email))",
+          "ms": 0.01,
+          "note": "Index Scan, O(log n)"
+        }
+      ]
+    }
+  ],
+  "index_sizes": [
+    {
+      "name": "idx_btree_orders_created_at",
+      "pretty": "16 kB",
+      "bytes": 16384
+    },
+    {
+      "name": "idx_btree_orders_status",
+      "pretty": "16 kB",
+      "bytes": 16384
+    },
+    {
+      "name": "idx_btree_books_price",
+      "pretty": "8192 bytes",
+      "bytes": 8192
+    },
+    {
+      "name": "idx_hash_orders_user_id",
+      "pretty": "32 kB",
+      "bytes": 32768
+    },
+    {
+      "name": "idx_gist_warehouses_location",
+      "pretty": "8192 bytes",
+      "bytes": 8192
+    },
+    {
+      "name": "idx_gist_books_title_trgm",
+      "pretty": "8192 bytes",
+      "bytes": 8192
+    },
+    {
+      "name": "idx_spgist_sessions_ip",
+      "pretty": "82 MB",
+      "bytes": 86261760
+    },
+    {
+      "name": "idx_gin_books_fts",
+      "pretty": "16 kB",
+      "bytes": 16384
+    },
+    {
+      "name": "idx_gin_books_tags",
+      "pretty": "16 kB",
+      "bytes": 16384
+    },
+    {
+      "name": "idx_gin_books_metadata",
+      "pretty": "16 kB",
+      "bytes": 16384
+    },
+    {
+      "name": "idx_gin_reviews_fts",
+      "pretty": "16 kB",
+      "bytes": 16384
+    },
+    {
+      "name": "idx_brin_orders_created_at",
+      "pretty": "24 kB",
+      "bytes": 24576
+    },
+    {
+      "name": "idx_partial_orders_new",
+      "pretty": "16 kB",
+      "bytes": 16384
+    },
+    {
+      "name": "idx_partial_reviews_published",
+      "pretty": "8192 bytes",
+      "bytes": 8192
+    },
+    {
+      "name": "idx_func_users_email_lower",
+      "pretty": "39 MB",
+      "bytes": 40640512
+    },
+    {
+      "name": "idx_covering_orders_user",
+      "pretty": "16 kB",
+      "bytes": 16384
+    },
+    {
+      "name": "idx_multi_reviews_book_rating",
+      "pretty": "8192 bytes",
+      "bytes": 8192
+    },
+    {
+      "name": "idx_multi_orders_user_status",
+      "pretty": "16 kB",
+      "bytes": 16384
+    }
+  ],
+  "dml": [
+    {
+      "op": "INSERT 1000 строк (все индексы активны)",
+      "with_idx_ms": 123
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+%%{init: {'theme': 'default', 'themeVariables': {'primaryColor': '#e8f4f8', 'primaryBorderColor': '#2c7bb6', 'lineColor': '#555'}}}%%
+erDiagram
+
+    %% ============================================================
+    %% СИЛЬНЫЕ СУЩНОСТИ
+    %% ============================================================
+
+    USER {
+        bigint   UserId       PK "идентификатор"
+        varchar  Email        UK "альтернативный идент. AK1"
+        varchar  FullName
+        datetime RegisteredAt
+        boolean  IsActive
+    }
+
+    AUTHOR {
+        bigint  AuthorId   PK "идентификатор"
+        varchar FullName
+        text    Biography      "GIN FTS, 0..1"
+        date    BirthDate      "0..1"
+        varchar Country        "0..1"
+    }
+
+    CATEGORY {
+        bigint CategoryId  PK "идентификатор"
+        bigint ParentId    FK "рекурсия, 0..1"
+        varchar Name
+    }
+
+    BOOK {
+        bigint   BookId          PK "идентификатор"
+        varchar  ISBN            UK "альтернативный идент. AK1"
+        varchar  Title              "GIN trgm"
+        text     Description        "GIN FTS, 0..1"
+        smallint PublicationYear    "B-tree, 0..1"
+        integer  Pages              "0..1"
+        numeric  Price              "B-tree"
+        text     Tags               "GIN array, 0..N"
+        jsonb    Metadata           "GIN jsonb, 0..1"
+    }
+
+    WAREHOUSE {
+        bigint  WarehouseId  PK "идентификатор"
+        varchar Name
+        point   Location        "GiST"
+        integer Capacity        "0..1"
+    }
+
+    ORDER {
+        bigint   OrderId      PK "идентификатор"
+        bigint   UserId       FK
+        varchar  Status          "new/paid/shipped/completed/cancelled"
+        numeric  TotalAmount
+        datetime CreatedAt       "BRIN"
+        datetime UpdatedAt
+    }
+
+    ORDER_ITEM {
+        bigint  OrderItemId  PK "идентификатор (суррогатный)"
+        bigint  OrderId      FK
+        bigint  BookId       FK
+        integer Quantity
+        numeric UnitPrice       "цена на момент заказа"
+    }
+
+    REVIEW {
+        bigint   ReviewId     PK "идентификатор"
+        bigint   UserId       FK
+        bigint   BookId       FK
+        smallint Rating          "1..5"
+        text     ReviewText      "GIN FTS, 0..1"
+        boolean  IsPublished
+        datetime CreatedAt
+    }
+
+    USER_SESSION {
+        bigint   SessionId   PK "идентификатор"
+        bigint   UserId      FK
+        inet     IP             "SP-GiST"
+        datetime StartedAt
+        varchar  UserAgent      "0..1"
+    }
+
+    %% ============================================================
+    %% ИДЕНТИФИКАЦИОННО-ЗАВИСИМЫЕ СУЩНОСТИ (шаблон «сопряжение»)
+    %% ============================================================
+
+    BOOK_AUTHOR {
+        bigint BookId   PK,FK "составной идентификатор"
+        bigint AuthorId PK,FK "составной идентификатор"
+    }
+
+    BOOK_CATEGORY {
+        bigint BookId      PK,FK "составной идентификатор"
+        bigint CategoryId  PK,FK "составной идентификатор"
+    }
+
+    STOCK {
+        bigint  BookId       PK,FK "составной идентификатор"
+        bigint  WarehouseId  PK,FK "составной идентификатор"
+        integer Quantity           "остаток"
+    }
+
+    %% ============================================================
+    %% СВЯЗИ (нотация crow's foot / IE)
+    %% LEFT: мощность со стороны левой сущности
+    %% RIGHT: мощность со стороны правой сущности
+    %% || = ровно один (обязательный)
+    %% |o = ноль или один (необязательный)
+    %% }| = один или более (обязательный many)
+    %% }o = ноль или более (необязательный many)
+    %% ============================================================
+
+    %% Сильные 1:N
+    USER         ||--o{  ORDER        : "размещает (0..N заказов)"
+    USER         ||--o{  REVIEW       : "пишет (0..N отзывов)"
+    USER         ||--o{  USER_SESSION : "создаёт (0..N сессий)"
+    ORDER        ||--|{  ORDER_ITEM   : "содержит (1..N позиций)"
+    BOOK         ||--o{  ORDER_ITEM   : "входит в позиции"
+    BOOK         ||--o{  REVIEW       : "получает отзывы"
+
+    %% Рекурсивная (иерархия категорий)
+    CATEGORY     |o--o{  CATEGORY     : "родитель/подкатегории"
+
+    %% Идентифицирующие M:N через ID-dependent сущности
+    BOOK         ||--|{  BOOK_AUTHOR   : "написана авторами (1..N)"
+    AUTHOR       ||--o{  BOOK_AUTHOR   : "написал книги (0..N)"
+    BOOK         ||--|{  BOOK_CATEGORY : "относится к категориям (1..N)"
+    CATEGORY     ||--o{  BOOK_CATEGORY : "включает книги (0..N)"
+    BOOK         ||--o{  STOCK         : "хранится на складах (0..N)"
+    WAREHOUSE    ||--o{  STOCK         : "содержит книги (0..N)"

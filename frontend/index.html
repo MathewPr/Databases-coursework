@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Курсовая: PostgreSQL Индексы — Онлайн-магазин книг</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Онлайн-магазин книг — Модели данных</h1>
+    <div class="subtitle">Курсовая работа · Механизмы индексации PostgreSQL</div>
+  </div>
+  <div style="margin-left:auto; display:flex; gap:8px;">
+    <span class="badge">ER</span>
+    <span class="badge" style="background:var(--purple)">SOM</span>
+    <span class="badge" style="background:var(--green)">Реляционная</span>
+    <span class="badge" style="background:var(--orange)">Индексы</span>
+  </div>
+</header>
+
+<nav>
+  <div class="tab t-er active" onclick="showTab('er')">
+    <div class="dot" style="background:var(--blue)"></div>ER-модель
+  </div>
+  <div class="tab t-som" onclick="showTab('som')">
+    <div class="dot" style="background:var(--purple)"></div>Семантическая модель
+  </div>
+  <div class="tab t-rel" onclick="showTab('rel')">
+    <div class="dot" style="background:var(--green)"></div>Реляционная модель
+  </div>
+  <div class="tab t-idx" onclick="showTab('idx')">
+    <div class="dot" style="background:var(--orange)"></div>Типы индексов
+  </div>
+  <div class="tab t-bench" onclick="showTab('bench')">
+    <div class="dot" style="background:var(--teal)"></div>Бенчмарки
+  </div>
+</nav>
+
+<div id="tooltip"></div>
+
+<!-- ========== ER MODEL ========== -->
+<div class="panel active" id="panel-er">
+  <div class="section-header">
+    <h2 style="color:var(--blue-light)">ER-модель</h2>
+    <p>Концептуальный уровень — сущности, идентификаторы, связи. ER-модель не оперирует ключами.</p>
+  </div>
+  <div class="zoom-bar">
+    <button id="er-zoom-in"    class="zoom-btn">+</button>
+    <button id="er-zoom-reset" class="zoom-btn">⟳</button>
+    <button id="er-zoom-out"   class="zoom-btn">−</button>
+  </div>
+  <div id="er-svg-wrap">
+    <div id="er-mermaid" class="mermaid-target"></div>
+  </div>
+</div>
+
+<!-- ========== SEMANTIC MODEL ========== -->
+<div class="panel" id="panel-som">
+  <div class="section-header">
+    <h2 style="color:#a78bfa">Модель семантических объектов</h2>
+    <p>Концептуальный уровень — именованные наборы атрибутов. Кардинальность: <b>min.max</b>. ID — идентификатор.</p>
+  </div>
+  <div class="som-grid" id="som-grid"></div>
+</div>
+
+<!-- ========== RELATIONAL MODEL ========== -->
+<div class="panel" id="panel-rel">
+  <div class="section-header">
+    <h2 style="color:#34d399">Реляционная модель</h2>
+    <p>Логический уровень — отношения, первичные ключи, внешние ключи, нормализация (3НФ / БКНФ).</p>
+  </div>
+  <div class="er-legend" style="margin-bottom:14px;">
+    <div class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#fbbf24;border-radius:2px;margin-right:4px;vertical-align:middle"></span>PK — первичный ключ</div>
+    <div class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#818cf8;border-radius:2px;margin-right:4px;vertical-align:middle"></span>FK — внешний ключ</div>
+    <div class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#34d399;border-radius:2px;margin-right:4px;vertical-align:middle"></span>UK — ключ-кандидат (AK)</div>
+    <div class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#64748b;border-radius:2px;margin-right:4px;vertical-align:middle"></span>GEN — вычисляемый столбец</div>
+    <div class="legend-item" style="color:#818cf8">── FK → PK (стрелка ссылки)</div>
+  </div>
+  <div id="rel-svg-wrap">
+    <div id="rel-mermaid" class="mermaid-target"></div>
+  </div>
+  <p style="font-size:0.78rem;color:var(--text2);margin-bottom:24px">Стрелки соответствуют связям FK → PK.</p>
+  <h3 style="margin-bottom:12px;color:var(--text2);font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em">Детальное описание отношений</h3>
+  <div class="rel-grid" id="rel-grid"></div>
+  <h3 style="margin:28px 0 12px;color:var(--text2);font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em">Типы связей</h3>
+  <div id="rel-types"></div>
+  <h3 style="margin:28px 0 12px;color:var(--text2);font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em">Правила минимальной кардинальности</h3>
+  <div id="rel-cardinality"></div>
+</div>
+
+<!-- ========== INDEX TYPES ========== -->
+<div class="panel" id="panel-idx">
+  <div class="section-header">
+    <h2 style="color:#fbbf24">Типы индексов PostgreSQL</h2>
+    <p>Внутренний уровень — физические структуры хранения для ускорения запросов.</p>
+  </div>
+  <div class="idx-grid" id="idx-grid"></div>
+  <h3 style="margin-bottom:12px;color:var(--text2);font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em">Сравнительная таблица</h3>
+  <div class="compare-wrap">
+    <table class="compare" id="compare-table"></table>
+  </div>
+</div>
+
+<!-- ========== BENCHMARKS ========== -->
+<div class="panel" id="panel-bench">
+  <div class="section-header">
+    <h2 style="color:#2dd4bf">Сравнительный анализ производительности</h2>
+    <p>Методика, ожидаемые результаты и сценарии применения каждого типа индекса.</p>
+  </div>
+  <div id="bench-content"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script src="js/main.js"></script>
+<script src="js/er.js"></script>
+<script src="js/som.js"></script>
+<script src="js/rel.js"></script>
+<script src="js/indexes.js"></script>
+<script src="js/benchmarks.js"></script>
+</body>
+</html>
