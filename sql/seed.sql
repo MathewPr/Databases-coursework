@@ -1,4 +1,5 @@
 SELECT setseed(0.42);
+\encoding UTF8
 
 \echo '>>> Inserting users (1 000 000)...'
 \timing on
@@ -41,13 +42,13 @@ SELECT i, NULL,
            'Science Fiction','Self-Help','Business','Health','Sports'])[i]
 FROM generate_series(1, 20) i;
 
+SELECT setval('categories_id_seq', (SELECT max(id) FROM categories));
+
 INSERT INTO categories (parent_id, name)
 SELECT
     (random() * 19)::int + 1,
     'Subcategory ' || i || ' ' || substr(md5(i::text), 1, 4)
 FROM generate_series(1, 180) i;
-
-SELECT setval('categories_id_seq', (SELECT max(id) FROM categories));
 
 \timing off
 
@@ -161,11 +162,15 @@ VALUES
 \timing on
 
 INSERT INTO stock (book_id, warehouse_id, quantity)
-SELECT DISTINCT ON (book_id, warehouse_id)
-    (random() * 499999)::bigint + 1,
-    (random() * 19)::int + 1,
-    (random() * 500)::int
-FROM generate_series(1, 250000)
+SELECT DISTINCT ON (book_id, warehouse_id) book_id, warehouse_id, quantity
+FROM (
+    SELECT
+        (random() * 499999)::bigint + 1 AS book_id,
+        (random() * 19)::int + 1        AS warehouse_id,
+        (random() * 500)::int           AS quantity
+    FROM generate_series(1, 250000)
+) s
+ORDER BY book_id, warehouse_id
 ON CONFLICT DO NOTHING;
 
 \timing off

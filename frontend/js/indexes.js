@@ -75,19 +75,4 @@ function buildIndexes() {
       </div>`;
     grid.appendChild(card);
   }
-
-  const table = document.getElementById('compare-table');
-  const headers = ['Тип', 'Равенство', 'Диапазон', 'Сортировка', 'Составной', 'UNIQUE'];
-  table.innerHTML = `<tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>`;
-  for (const idx of IDX_TYPES) {
-    const tr = document.createElement('tr');
-    const check = v => v ? '<span class="check">✓</span>' : '<span class="cross">✗</span>';
-    tr.innerHTML = `<td class="idx-col">${idx.name}</td>
-      <td>${check(idx.eq)}</td>
-      <td>${check(idx.range)}</td>
-      <td>${check(idx.sort)}</td>
-      <td>${check(idx.multi)}</td>
-      <td>${check(idx.unique)}</td>`;
-    table.appendChild(tr);
-  }
 }

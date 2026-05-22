@@ -208,6 +208,28 @@ WHERE ip << '10.0.0.0/8' LIMIT 100`,
 		},
 	},
 	{
+		id:    "gist_trgm",
+		title: "§6 GiST: триграммный поиск (LIKE / %слово%)",
+		variants: []variant{
+			{
+				label: "Seq Scan",
+				setup: []string{
+					"SET enable_seqscan=on",
+					"SET enable_bitmapscan=off",
+					"SET enable_indexscan=off",
+				},
+				query: `SELECT id, title FROM books WHERE title ILIKE '%тайна%' LIMIT 20`,
+				note:  "Seq Scan, 500K строк",
+			},
+			{
+				label: "GiST trgm (title ILIKE)",
+				setup: []string{"SET enable_seqscan=off"},
+				query: `SELECT id, title FROM books WHERE title ILIKE '%тайна%' LIMIT 20`,
+				note:  "GiST Index Scan через gist_trgm_ops",
+			},
+		},
+	},
+	{
 		id:    "partial",
 		title: "§7 Partial: горячее подмножество",
 		variants: []variant{

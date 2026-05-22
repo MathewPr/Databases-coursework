@@ -75,7 +75,7 @@ psql -U postgres -d bookstore -f sql/schema.sql
 psql -U postgres -d bookstore -f sql/seed.sql
 ```
 
-Загружает около 8 миллионов строк суммарно. **Занимает 10–20 минут**
+Загружает около 8 миллионов строк суммарно.
 
 После завершения можно проверить, что данные на месте:
 ```cmd
@@ -90,7 +90,7 @@ psql -U postgres -d bookstore -c "SELECT relname, n_live_tup FROM pg_stat_user_t
 psql -U postgres -d bookstore -f sql/indexes.sql
 ```
 
-Строит 18 индексов всех типов. **Занимает 5–15 минут**
+Строит 18 индексов всех типов.
 
 ---
 
@@ -140,6 +140,11 @@ python -m http.server 8080
 ---
 
 ## Быстрый старт (все шаги одной вставкой)
+
+**Windows (cmd):**
+```cmd
+set PGPASSWORD=ВАШ_ПАРОЛЬ
+```
 
 ```cmd
 psql -U postgres -c "CREATE DATABASE bookstore;"

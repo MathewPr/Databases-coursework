@@ -1,34 +1,3 @@
-const BENCH_MATRIX = [
-  { type:'B-tree',    eq:'fast', range:'fast', sort:'fast', size:'medium',
-    useCase:'Универсальный — ключи, даты, числа, строки с prefix-поиском' },
-  { type:'Hash',      eq:'fast', range:'—',    sort:'—',    size:'small',
-    useCase:'Точечные JOIN по равенству при высокой кардинальности' },
-  { type:'GiST',      eq:'ok',   range:'fast', sort:'fast', size:'large',
-    useCase:'Геометрия, KNN, диапазоны, триграммы (GIN предпочтителен для FTS)' },
-  { type:'SP-GiST',   eq:'fast', range:'ok',   sort:'—',    size:'small',
-    useCase:'IP-подсети (<<), иерархические ключи, несбалансированные пространства' },
-  { type:'GIN',       eq:'fast', range:'—',    sort:'—',    size:'large',
-    useCase:'FTS (tsvector), массивы (@>), JSONB (@>/?) — незаменим' },
-  { type:'BRIN',      eq:'slow', range:'ok',   sort:'—',    size:'tiny',
-    useCase:'Монотонные временные ряды (INSERT-порядок = данные)' },
-];
-
-
-function benchClass(v) {
-  if (v === 'fast' || v === 'low' || v === 'tiny' || v === 'small') return 'bench-good';
-  if (v === 'ok'   || v === 'medium' || v === 'medium+')            return 'bench-med';
-  if (v === 'slow' || v === 'high'   || v === 'large')              return 'bench-bad';
-  return 'bench-na';
-}
-
-function benchLabel(v) {
-  const map = {
-    fast:'быстро', ok:'умеренно', slow:'медленно', '—':'—',
-    low:'низкие', medium:'средние', high:'высокие',
-    tiny:'крошечный', small:'малый', 'medium+':'средний+', large:'большой',
-  };
-  return map[v] || v;
-}
 
 function buildBenchmarks() {
   const root = document.getElementById('bench-content');
@@ -47,37 +16,6 @@ function buildBenchmarks() {
     </div>
     `;
   root.appendChild(meth);
-
-  const matrixSec = document.createElement('div');
-  matrixSec.className = 'bench-section';
-  matrixSec.innerHTML = `<h3 style="color:var(--teal)">Сводная матрица производительности</h3>`;
-  const wrap = document.createElement('div');
-  wrap.className = 'bench-compare-wrap';
-  const tbl = document.createElement('table');
-  tbl.className = 'bench-compare';
-  tbl.innerHTML = `<tr>
-    <th>Тип индекса</th>
-    <th>Равенство (=)</th>
-    <th>Диапазон</th>
-    <th>Сортировка</th>
-    <th>Размер</th>
-    <th>Сценарий применения</th>
-  </tr>`;
-  for (const r of BENCH_MATRIX) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="bench-idx-name">${r.type}</td>
-      <td class="${benchClass(r.eq)}">${benchLabel(r.eq)}</td>
-      <td class="${benchClass(r.range)}">${benchLabel(r.range)}</td>
-      <td class="${benchClass(r.sort)}">${benchLabel(r.sort)}</td>
-      <td class="${benchClass(r.size)}">${benchLabel(r.size)}</td>
-      <td style="color:var(--text2);font-size:0.8rem">${r.useCase}</td>
-    `;
-    tbl.appendChild(tr);
-  }
-  wrap.appendChild(tbl);
-  matrixSec.appendChild(wrap);
-  root.appendChild(matrixSec);
 
   const realSec = document.createElement('div');
   realSec.className = 'bench-section';
@@ -113,10 +51,7 @@ function renderRealResults(data) {
 
   let html = `
     <div style="font-size:0.8rem;color:var(--text2);margin-bottom:12px">
-      <span style="color:var(--green);font-weight:600">✓ Реальные данные загружены</span>
-      &nbsp;·&nbsp; ${data.pg_version}
-      &nbsp;·&nbsp; ${data.runs} прогона (медиана)
-      &nbsp;·&nbsp; собрано ${new Date(data.collected_at).toLocaleString('ru')}
+      собрано ${new Date(data.collected_at).toLocaleString('ru')}
     </div>`;
 
 

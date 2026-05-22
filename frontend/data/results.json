@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-05-13T20:38:54Z",
+  "collected_at": "2026-05-22T03:46:40Z",
   "pg_version": "PostgreSQL 18.3",
   "runs": 3,
   "scenarios": [
@@ -9,12 +9,12 @@
       "results": [
         {
           "label": "Seq Scan",
-          "ms": 0.02,
+          "ms": 107.83,
           "note": "Full table scan, 2M строк"
         },
         {
           "label": "Индекс (B-tree или BRIN)",
-          "ms": 0.01,
+          "ms": 141.2,
           "note": "Планировщик выбирает лучший индекс"
         }
       ]
@@ -25,7 +25,7 @@
       "results": [
         {
           "label": "Seq Scan",
-          "ms": 0.01,
+          "ms": 73.07,
           "note": "Full table scan"
         },
         {
@@ -35,7 +35,7 @@
         },
         {
           "label": "Hash (user_id)",
-          "ms": 0.01,
+          "ms": 0.02,
           "note": "Hash Index Scan"
         }
       ]
@@ -46,12 +46,12 @@
       "results": [
         {
           "label": "Seq Scan",
-          "ms": 0.02,
+          "ms": 81.31,
           "note": "500K строк без GIN"
         },
         {
           "label": "GIN (fts)",
-          "ms": 0.02,
+          "ms": 16.03,
           "note": "Bitmap Index Scan через GIN"
         }
       ]
@@ -62,12 +62,12 @@
       "results": [
         {
           "label": "Seq Scan",
-          "ms": 0.01,
+          "ms": 137.56,
           "note": "Seq Scan, 500K строк"
         },
         {
           "label": "GIN (tags @\u003e)",
-          "ms": 0.02,
+          "ms": 116.55,
           "note": "Bitmap Index Scan через GIN"
         }
       ]
@@ -89,17 +89,33 @@
       ]
     },
     {
+      "id": "gist_trgm",
+      "title": "§6 GiST: триграммный поиск (LIKE / %слово%)",
+      "results": [
+        {
+          "label": "Seq Scan",
+          "ms": 0.86,
+          "note": "Seq Scan, 500K строк"
+        },
+        {
+          "label": "GiST trgm (title ILIKE)",
+          "ms": 0.24,
+          "note": "GiST Index Scan через gist_trgm_ops"
+        }
+      ]
+    },
+    {
       "id": "partial",
       "title": "§7 Partial: горячее подмножество",
       "results": [
         {
           "label": "Seq Scan",
-          "ms": 0.01,
+          "ms": 81.48,
           "note": "Full table scan"
         },
         {
           "label": "Partial index (WHERE status='new')",
-          "ms": 0.02,
+          "ms": 0.49,
           "note": "Partial B-tree, только 'new' заказы"
         }
       ]
@@ -115,7 +131,7 @@
         },
         {
           "label": "INCLUDE → Index-Only Scan",
-          "ms": 0.01,
+          "ms": 0.02,
           "note": "heap не читается"
         }
       ]
@@ -131,7 +147,7 @@
         },
         {
           "label": "Functional index (lower(email))",
-          "ms": 0.01,
+          "ms": 0.02,
           "note": "Index Scan, O(log n)"
         }
       ]
@@ -140,23 +156,23 @@
   "index_sizes": [
     {
       "name": "idx_btree_orders_created_at",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "43 MB",
+      "bytes": 44974080
     },
     {
       "name": "idx_btree_orders_status",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "13 MB",
+      "bytes": 14073856
     },
     {
       "name": "idx_btree_books_price",
-      "pretty": "8192 bytes",
-      "bytes": 8192
+      "pretty": "11 MB",
+      "bytes": 11264000
     },
     {
       "name": "idx_hash_orders_user_id",
-      "pretty": "32 kB",
-      "bytes": 32768
+      "pretty": "64 MB",
+      "bytes": 66994176
     },
     {
       "name": "idx_gist_warehouses_location",
@@ -165,33 +181,33 @@
     },
     {
       "name": "idx_gist_books_title_trgm",
-      "pretty": "8192 bytes",
-      "bytes": 8192
+      "pretty": "69 MB",
+      "bytes": 72220672
     },
     {
       "name": "idx_spgist_sessions_ip",
       "pretty": "82 MB",
-      "bytes": 86261760
+      "bytes": 86319104
     },
     {
       "name": "idx_gin_books_fts",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "95 MB",
+      "bytes": 99483648
     },
     {
       "name": "idx_gin_books_tags",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "1152 kB",
+      "bytes": 1179648
     },
     {
       "name": "idx_gin_books_metadata",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "6056 kB",
+      "bytes": 6201344
     },
     {
       "name": "idx_gin_reviews_fts",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "49 MB",
+      "bytes": 51855360
     },
     {
       "name": "idx_brin_orders_created_at",
@@ -200,13 +216,13 @@
     },
     {
       "name": "idx_partial_orders_new",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "2232 kB",
+      "bytes": 2285568
     },
     {
       "name": "idx_partial_reviews_published",
-      "pretty": "8192 bytes",
-      "bytes": 8192
+      "pretty": "12 MB",
+      "bytes": 12886016
     },
     {
       "name": "idx_func_users_email_lower",
@@ -215,24 +231,24 @@
     },
     {
       "name": "idx_covering_orders_user",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "107 MB",
+      "bytes": 112312320
     },
     {
       "name": "idx_multi_reviews_book_rating",
-      "pretty": "8192 bytes",
-      "bytes": 8192
+      "pretty": "14 MB",
+      "bytes": 15056896
     },
     {
       "name": "idx_multi_orders_user_status",
-      "pretty": "16 kB",
-      "bytes": 16384
+      "pretty": "57 MB",
+      "bytes": 59260928
     }
   ],
   "dml": [
     {
       "op": "INSERT 1000 строк (все индексы активны)",
-      "with_idx_ms": 123
+      "with_idx_ms": 131
     }
   ]
 }

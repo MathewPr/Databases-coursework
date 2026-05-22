@@ -24,6 +24,13 @@ DROP INDEX IF EXISTS idx_gin_reviews_fts;
 DROP INDEX IF EXISTS idx_brin_orders_created_at;
 DROP INDEX IF EXISTS idx_brin_sessions_started_at;
 
+DROP INDEX IF EXISTS idx_partial_orders_new;
+DROP INDEX IF EXISTS idx_partial_reviews_published;
+DROP INDEX IF EXISTS idx_covering_orders_user;
+DROP INDEX IF EXISTS idx_func_users_email_lower;
+DROP INDEX IF EXISTS idx_multi_reviews_book_rating;
+DROP INDEX IF EXISTS idx_multi_orders_user_status;
+
 \echo '=== [1] B-TREE ==='
 
 CREATE INDEX idx_btree_orders_created_at
@@ -93,6 +100,29 @@ CREATE INDEX idx_brin_orders_created_at
 CREATE INDEX idx_brin_sessions_started_at
     ON user_sessions USING brin (started_at)
     WITH (pages_per_range = 64);
+
+\echo '=== [7] Partial, Covering, Functional, Multi-column ==='
+
+CREATE INDEX idx_partial_orders_new
+    ON orders (created_at DESC)
+    WHERE status = 'new';
+
+CREATE INDEX idx_partial_reviews_published
+    ON reviews (book_id, rating)
+    WHERE is_published = true;
+
+CREATE INDEX idx_covering_orders_user
+    ON orders (user_id)
+    INCLUDE (status, created_at, total_amount);
+
+CREATE INDEX idx_func_users_email_lower
+    ON users (lower(email));
+
+CREATE INDEX idx_multi_reviews_book_rating
+    ON reviews (book_id, rating DESC);
+
+CREATE INDEX idx_multi_orders_user_status
+    ON orders (user_id, status);
 
 \echo '=== Размеры индексов ==='
 
