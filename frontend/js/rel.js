@@ -292,45 +292,172 @@ const RD_CARDINALITY = [
     delete_p: 'Каскадное удаление всех связей книга—автор (ON DELETE CASCADE)',
     delete_c: 'Разрешено',
   },
+  {
+    parent: 'BOOKS', child: 'BOOK_CATEGORIES', card: '1 : 1..N', required: true,
+    insert_p: 'Без ограничений',
+    insert_c: 'Требуется существующая книга (NOT NULL FK)',
+    update:   'Запрещено для обеих сторон',
+    delete_p: 'Каскадное удаление всех связей книга—категория (ON DELETE CASCADE)',
+    delete_c: 'Разрешено',
+  },
+  {
+    parent: 'USERS', child: 'REVIEWS', card: '1 : 0..N', required: true,
+    insert_p: 'Без ограничений — пользователь может не оставлять отзывов',
+    insert_c: 'Требуется существующий пользователь (NOT NULL FK)',
+    update:   'Запрещено для обеих сторон',
+    delete_p: 'Каскадное удаление всех отзывов (ON DELETE CASCADE)',
+    delete_c: 'Разрешено',
+  },
+  {
+    parent: 'BOOKS', child: 'REVIEWS', card: '1 : 0..N', required: true,
+    insert_p: 'Без ограничений — книга может не иметь отзывов',
+    insert_c: 'Требуется существующая книга (NOT NULL FK)',
+    update:   'Запрещено для обеих сторон',
+    delete_p: 'Каскадное удаление всех отзывов на книгу (ON DELETE CASCADE)',
+    delete_c: 'Разрешено',
+  },
+  {
+    parent: 'BOOKS', child: 'STOCK', card: '1 : 0..N', required: true,
+    insert_p: 'Без ограничений — книга может отсутствовать на складах',
+    insert_c: 'Требуется существующая книга (NOT NULL FK)',
+    update:   'Запрещено для обеих сторон',
+    delete_p: 'Каскадное удаление складских записей книги (ON DELETE CASCADE)',
+    delete_c: 'Разрешено',
+  },
+  {
+    parent: 'WAREHOUSES', child: 'STOCK', card: '1 : 0..N', required: true,
+    insert_p: 'Без ограничений — склад может быть пустым',
+    insert_c: 'Требуется существующий склад (NOT NULL FK)',
+    update:   'Запрещено для обеих сторон',
+    delete_p: 'Каскадное удаление складских записей (ON DELETE CASCADE)',
+    delete_c: 'Разрешено',
+  },
 ];
 
-function buildRelMermaid() {
-  const roleKey = r => {
-    if (r === 'pk')   return 'PK';
-    if (r === 'fk')   return 'FK';
-    if (r === 'uk')   return 'UK';
-    if (r === 'pkfk') return 'PK,FK';
-    return '';
-  };
-  const tbl = id => RD_TABLES.find(t => t.id === id);
+const REL_POS = {
+  user_sessions:   { x:40,   y:40,  w:340, h:154 },
+  users:           { x:40,   y:320, w:340, h:154 },
+  orders:          { x:480,  y:320, w:340, h:176 },
+  order_items:     { x:480,  y:600, w:340, h:154 },
+  reviews:         { x:880,  y:40,  w:360, h:198 },
+  books:           { x:880,  y:320, w:360, h:264 },
+  book_authors:    { x:1320, y:70,  w:340, h:88  },
+  book_categories: { x:1320, y:380, w:340, h:88  },
+  stock:           { x:1320, y:620, w:340, h:110 },
+  authors:         { x:1720, y:80,  w:340, h:154 },
+  categories:      { x:1720, y:380, w:340, h:110 },
+  warehouses:      { x:1720, y:600, w:340, h:132 },
+};
 
-  let txt = '%%{init: {"er": {"layoutDirection": "LR", "minEntityWidth": 140, "minEntityHeight": 50, "entityPadding": 18, "useMaxWidth": false}}}%%\nerDiagram\n';
-  for (const t of RD_TABLES) {
-    txt += `  ${t.name} {\n`;
-    for (const c of t.cols) {
-      const key  = roleKey(c.r);
-      const note = c.r === 'gen' ? ' "GENERATED"' : c.nu ? ' "NULL"' : '';
-      txt += `    ${c.n} ${c.t}${key ? ' ' + key : ''}${note}\n`;
-    }
-    txt += `  }\n`;
+const REL_PATHS = [
+  { from:'orders',          to:'users',      d:'M 480 400 L 380 400', card:['zeroOrMany','one'] },
+  { from:'user_sessions',   to:'users',      d:'M 210 194 L 210 320', card:['zeroOrMany','one'] },
+  { from:'reviews',         to:'users',      d:'M 940 40 L 940 20 L 18 20 L 18 397 L 40 397', card:['zeroOrMany','one'] },
+  { from:'order_items',     to:'orders',     d:'M 650 600 L 650 496', card:['oneOrMany','one'] },
+  { from:'order_items',     to:'books',      d:'M 820 690 L 850 690 L 850 540 L 880 540', card:['zeroOrMany','one'] },
+  { from:'reviews',         to:'books',      d:'M 1060 238 L 1060 320', card:['zeroOrMany','one'] },
+  { from:'book_authors',    to:'books',      d:'M 1320 114 L 1280 114 L 1280 360 L 1240 360', card:['oneOrMany','one'] },
+  { from:'book_authors',    to:'authors',    d:'M 1660 114 L 1720 114', card:['zeroOrMany','one'] },
+  { from:'book_categories', to:'books',      d:'M 1320 424 L 1240 424', card:['oneOrMany','one'] },
+  { from:'book_categories', to:'categories', d:'M 1660 424 L 1720 424', card:['zeroOrMany','one'] },
+  { from:'stock',           to:'books',      d:'M 1320 675 L 1265 675 L 1265 520 L 1240 520', card:['zeroOrMany','one'] },
+  { from:'stock',           to:'warehouses', d:'M 1660 675 L 1720 675', card:['zeroOrMany','one'] },
+  { from:'categories',      to:'categories', d:'M 2060 410 L 2110 410 L 2110 460 L 2060 460', self:true, card:['zeroOrMany','zeroOrOne'] },
+];
+
+const REL_TYPE = {
+  bigserial:'bigserial', bigint:'bigint', text:'text', timestamptz:'timestamptz',
+  boolean:'boolean', numeric_12_2:'numeric(12,2)', numeric_10_2:'numeric(10,2)',
+  smallint:'smallint', integer:'integer', inet:'inet', text_array:'text[]',
+  jsonb:'jsonb', tsvector:'tsvector', date:'date', point:'point',
+};
+
+function relKeyTag(r) {
+  switch (r) {
+    case 'pk':   return { text:'PK',    fill:'#b45309' };
+    case 'pkfk': return { text:'PK,FK', fill:'#b45309' };
+    case 'fk':   return { text:'FK',    fill:'#4f46e5' };
+    case 'uk':   return { text:'UK',    fill:'#047857' };
+    case 'gen':  return { text:'GEN',   fill:'#64748b' };
+    default:     return { text:'',      fill:'#94a3b8' };
   }
-  for (const lk of RD_LINKS) {
-    const fT = tbl(lk.from), toT = tbl(lk.to);
-    if (!fT || !toT) continue;
-    txt += `  ${fT.name} }o--|| ${toT.name} : " "\n`;
-  }
-  return txt;
 }
 
-async function drawRelDiagram() {
-  const target = document.getElementById('rel-mermaid');
-  if (!target || typeof mermaid === 'undefined') return;
-  try {
-    const { svg } = await mermaid.render('rel-mermaid-svg', buildRelMermaid());
-    target.innerHTML = svg;
-  } catch (err) {
-    target.innerHTML = `<pre style="color:#f87171;padding:12px;white-space:pre-wrap">${err.message}</pre>`;
+function relNameStyle(r) {
+  switch (r) {
+    case 'pk':   return { fill:'#0f172a', deco:'underline', style:'normal', weight:'700' };
+    case 'pkfk': return { fill:'#0f172a', deco:'underline', style:'italic', weight:'700' };
+    case 'fk':   return { fill:'#3730a3', deco:'none',      style:'italic', weight:'500' };
+    case 'uk':   return { fill:'#0f172a', deco:'underline', style:'normal', weight:'500' };
+    case 'gen':  return { fill:'#64748b', deco:'none',      style:'italic', weight:'500' };
+    default:     return { fill:'#0f172a', deco:'none',      style:'normal', weight:'500' };
   }
+}
+
+function generatePureSvgRel() {
+  let svg = `<svg viewBox="0 0 2160 800" width="100%" height="auto" preserveAspectRatio="xMinYMin meet" style="background:#f8fafc; font-family: system-ui, sans-serif;">
+    <defs>
+      <filter id="rel-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"/>
+      </filter>
+    </defs>
+    <g id="rel-connections">`;
+
+  for (const p of REL_PATHS) {
+    const dash = p.self ? '6,4' : '0';
+    svg += `<path d="${p.d}" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="${dash}" />`;
+  }
+
+  svg += `</g>\n<g id="rel-card-layer">`;
+  for (const p of REL_PATHS) {
+    const pts = pathPoints(p.d);
+    if (pts.length < 2) continue;
+    const card = p.card || ['zeroOrMany', 'one'];
+    const s = pts[0], s2 = pts[1];
+    const [sux, suy] = unitTowards(s, s2);
+    svg += cardSymbol(s[0], s[1], sux, suy, card[0]);
+    const e = pts[pts.length - 1], e2 = pts[pts.length - 2];
+    const [eux, euy] = unitTowards(e, e2);
+    svg += cardSymbol(e[0], e[1], eux, euy, card[1]);
+  }
+
+  svg += `</g>\n<g id="rel-entities">`;
+
+  for (const t of RD_TABLES) {
+    const pos = REL_POS[t.id];
+    if (!pos) continue;
+    const xType = 150, xNull = 250;
+    svg += `
+    <g transform="translate(${pos.x}, ${pos.y})" filter="url(#rel-shadow)">
+      <rect width="${pos.w}" height="${pos.h}" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+      <path d="M 0 8 A 8 8 0 0 1 8 0 L ${pos.w - 8} 0 A 8 8 0 0 1 ${pos.w} 8 L ${pos.w} 30 L 0 30 Z" fill="#065f46"/>
+      <text x="${pos.w / 2}" y="20" fill="#ffffff" font-size="12.5" font-weight="bold" text-anchor="middle" letter-spacing="0.4">${t.name}</text>`;
+
+    let cy = 50;
+    for (const c of t.cols) {
+      const ns = relNameStyle(c.r);
+      const kt = relKeyTag(c.r);
+      const typeLabel = REL_TYPE[c.t] || c.t;
+      const nullText = c.nu ? 'NULL' : 'NOT NULL';
+      const nullFill = c.nu ? '#b45309' : '#64748b';
+      svg += `<text x="14" y="${cy}" font-size="12" font-family="monospace" fill="${ns.fill}" font-weight="${ns.weight}" font-style="${ns.style}" text-decoration="${ns.deco}">${c.n}</text>`;
+      svg += `<text x="${xType}" y="${cy}" font-size="10.5" font-family="monospace" fill="#64748b">${typeLabel}</text>`;
+      svg += `<text x="${xNull}" y="${cy}" font-size="9" font-family="monospace" fill="${nullFill}">${nullText}</text>`;
+      if (kt.text) svg += `<text x="${pos.w - 12}" y="${cy}" font-size="9.5" font-family="monospace" font-weight="700" fill="${kt.fill}" text-anchor="end">${kt.text}</text>`;
+      cy += 22;
+    }
+    svg += `</g>`;
+  }
+
+  svg += `</g></svg>`;
+  return svg;
+}
+
+function drawRelDiagram() {
+  const target = document.getElementById('rel-mermaid');
+  if (!target) return;
+  target.innerHTML = generatePureSvgRel();
+  if (typeof makeZoomable === 'function') makeZoomable('rel-svg-wrap', 'rel');
 }
 
 function buildRelational() {

@@ -1,208 +1,201 @@
 const ENTITIES = [
   {
-    id: 'USER', label: 'USER', type: 'strong', x: 40, y: 60, w: 200, h: 130,
-    attrs: [
-      {name:'UserId', role:'pk', note:'идентификатор'},
-      {name:'Email', role:'uk', note:'AK1 — альтернативный идент.'},
-      {name:'FullName', role:'', note:''},
-      {name:'RegisteredAt', role:'', note:''},
-      {name:'IsActive', role:'', note:'boolean'},
-    ]
+    id: 'USER_SESSION', label: 'USER_SESSION', type: 'dep',
+    x: 40, y: 40, w: 210, h: 175,
+    keys: [{name:'SessionID', type:'PK'}, {name:'UserID', type:'FK'}],
+    attrs: [{name:'IP'}, {name:'StartedAt'}, {name:'UserAgent'}]
   },
   {
-    id: 'AUTHOR', label: 'AUTHOR', type: 'strong', x: 920, y: 60, w: 200, h: 130,
-    attrs: [
-      {name:'AuthorId', role:'pk', note:'идентификатор'},
-      {name:'FullName', role:'', note:''},
-      {name:'Biography', role:'', note:'GIN FTS, 0..1'},
-      {name:'BirthDate', role:'', note:'0..1'},
-      {name:'Country', role:'', note:'0..1'},
-    ]
+    id: 'USER', label: 'USER', type: 'strong',
+    x: 40, y: 275, w: 210, h: 175,
+    keys: [{name:'UserID', type:'PK'}],
+    attrs: [{name:'Email'}, {name:'FullName'}, {name:'RegisteredAt'}, {name:'IsActive'}]
   },
   {
-    id: 'CATEGORY', label: 'CATEGORY', type: 'strong', x: 920, y: 300, w: 210, h: 110,
-    attrs: [
-      {name:'CategoryId', role:'pk', note:'идентификатор'},
-      {name:'ParentCategoryId', role:'fk', note:'рекурсия, 0..1'},
-      {name:'Name', role:'', note:''},
-    ]
+    id: 'ORDER', label: 'ORDER', type: 'strong',
+    x: 380, y: 275, w: 210, h: 195,
+    keys: [{name:'OrderID', type:'PK'}, {name:'UserID', type:'FK'}],
+    attrs: [{name:'Status'}, {name:'TotalAmount'}, {name:'CreatedAt'}, {name:'UpdatedAt'}]
   },
   {
-    id: 'BOOK', label: 'BOOK', type: 'strong', x: 400, y: 200, w: 240, h: 190,
-    attrs: [
-      {name:'BookId', role:'pk', note:'идентификатор'},
-      {name:'ISBN', role:'uk', note:'AK1'},
-      {name:'Title', role:'', note:'GIN trgm'},
-      {name:'Description', role:'', note:'GIN FTS, 0..1'},
-      {name:'PublicationYear', role:'', note:'B-tree, 0..1'},
-      {name:'Price', role:'', note:'B-tree'},
-      {name:'Tags', role:'', note:'GIN array, 0..N'},
-      {name:'Metadata', role:'', note:'GIN jsonb, 0..1'},
-    ]
+    id: 'ORDER_ITEM', label: 'ORDER_ITEM', type: 'dep',
+    x: 380, y: 540, w: 210, h: 155,
+    keys: [{name:'OrderID', type:'FK'}, {name:'BookID', type:'FK'}],
+    attrs: [{name:'Quantity'}, {name:'UnitPrice'}]
   },
   {
-    id: 'WAREHOUSE', label: 'WAREHOUSE', type: 'strong', x: 920, y: 530, w: 200, h: 110,
-    attrs: [
-      {name:'WarehouseId', role:'pk', note:'идентификатор'},
-      {name:'Name', role:'', note:''},
-      {name:'Location', role:'', note:'GiST'},
-      {name:'Capacity', role:'', note:'0..1'},
-    ]
+    id: 'REVIEW', label: 'REVIEW', type: 'dep',
+    x: 700, y: 40, w: 250, h: 195,
+    keys: [{name:'ReviewID', type:'PK'}, {name:'UserID', type:'FK'}, {name:'BookID', type:'FK'}],
+    attrs: [{name:'Rating'}, {name:'ReviewText'}, {name:'IsPublished'}]
   },
   {
-    id: 'ORDER', label: 'ORDER', type: 'strong', x: 40, y: 290, w: 210, h: 140,
-    attrs: [
-      {name:'OrderId', role:'pk', note:'идентификатор'},
-      {name:'UserId', role:'fk', note:'→ USER'},
-      {name:'Status', role:'', note:'new/paid/shipped/...'},
-      {name:'TotalAmount', role:'', note:'numeric'},
-      {name:'CreatedAt', role:'', note:'BRIN'},
-      {name:'UpdatedAt', role:'', note:''},
-    ]
+    id: 'BOOK', label: 'BOOK', type: 'strong',
+    x: 700, y: 295, w: 250, h: 235,
+    keys: [{name:'BookID', type:'PK'}],
+    attrs: [{name:'ISBN'}, {name:'Title'}, {name:'Description'}, {name:'PublicationYear'}, {name:'Price'}, {name:'Tags'}, {name:'Metadata'}]
   },
   {
-    id: 'ORDER_ITEM', label: 'ORDER_ITEM', type: 'dep', x: 280, y: 530, w: 210, h: 120,
-    attrs: [
-      {name:'OrderItemId', role:'pk', note:'суррогатный'},
-      {name:'OrderId', role:'fk', note:'→ ORDER'},
-      {name:'BookId', role:'fk', note:'→ BOOK'},
-      {name:'Quantity', role:'', note:''},
-      {name:'UnitPrice', role:'', note:'историческая цена'},
-    ]
+    id: 'BOOK_AUTHOR', label: 'BOOK_AUTHOR', type: 'assoc',
+    x: 1080, y: 60, w: 210, h: 100,
+    keys: [{name:'BookID', type:'FK'}, {name:'AuthorID', type:'FK'}],
+    attrs: []
   },
   {
-    id: 'REVIEW', label: 'REVIEW', type: 'dep', x: 530, y: 530, w: 210, h: 130,
-    attrs: [
-      {name:'ReviewId', role:'pk', note:'идентификатор'},
-      {name:'UserId', role:'fk', note:'→ USER'},
-      {name:'BookId', role:'fk', note:'→ BOOK'},
-      {name:'Rating', role:'', note:'1..5'},
-      {name:'ReviewText', role:'', note:'GIN FTS, 0..1'},
-      {name:'IsPublished', role:'', note:'частичный индекс'},
-    ]
+    id: 'BOOK_CATEGORY', label: 'BOOK_CATEGORY', type: 'assoc',
+    x: 1080, y: 360, w: 210, h: 100,
+    keys: [{name:'BookID', type:'FK'}, {name:'CategoryID', type:'FK'}],
+    attrs: []
   },
   {
-    id: 'USER_SESSION', label: 'USER_SESSION', type: 'dep', x: 40, y: 550, w: 200, h: 110,
-    attrs: [
-      {name:'SessionId', role:'pk', note:'идентификатор'},
-      {name:'UserId', role:'fk', note:'→ USER'},
-      {name:'IP', role:'', note:'SP-GiST, inet'},
-      {name:'StartedAt', role:'', note:''},
-      {name:'UserAgent', role:'', note:'0..1'},
-    ]
+    id: 'STOCK', label: 'STOCK', type: 'assoc',
+    x: 1080, y: 560, w: 210, h: 135,
+    keys: [{name:'BookID', type:'FK'}, {name:'WarehouseID', type:'FK'}],
+    attrs: [{name:'Quantity'}]
   },
   {
-    id: 'BOOK_AUTHOR', label: 'BOOK_AUTHOR', type: 'assoc', x: 690, y: 100, w: 180, h: 80,
-    attrs: [
-      {name:'BookId', role:'pk', note:'PK+FK → BOOK'},
-      {name:'AuthorId', role:'pk', note:'PK+FK → AUTHOR'},
-    ]
+    id: 'AUTHOR', label: 'AUTHOR', type: 'strong',
+    x: 1400, y: 70, w: 210, h: 175,
+    keys: [{name:'AuthorID', type:'PK'}],
+    attrs: [{name:'FullName'}, {name:'Biography'}, {name:'BirthDate'}, {name:'Country'}]
   },
   {
-    id: 'BOOK_CATEGORY', label: 'BOOK_CATEGORY', type: 'assoc', x: 690, y: 300, w: 180, h: 80,
-    attrs: [
-      {name:'BookId', role:'pk', note:'PK+FK → BOOK'},
-      {name:'CategoryId', role:'pk', note:'PK+FK → CATEGORY'},
-    ]
+    id: 'CATEGORY', label: 'CATEGORY', type: 'strong',
+    x: 1400, y: 345, w: 210, h: 135,
+    keys: [{name:'CategoryID', type:'PK'}, {name:'ParentCategoryID', type:'FK'}],
+    attrs: [{name:'Name'}]
   },
   {
-    id: 'STOCK', label: 'STOCK', type: 'assoc', x: 690, y: 480, w: 180, h: 90,
-    attrs: [
-      {name:'BookId', role:'pk', note:'PK+FK → BOOK'},
-      {name:'WarehouseId', role:'pk', note:'PK+FK → WAREHOUSE'},
-      {name:'Quantity', role:'', note:'остаток'},
-    ]
-  },
+    id: 'WAREHOUSE', label: 'WAREHOUSE', type: 'strong',
+    x: 1400, y: 560, w: 210, h: 155,
+    keys: [{name:'WarehouseID', type:'PK'}],
+    attrs: [{name:'Name'}, {name:'Location'}, {name:'Capacity'}]
+  }
 ];
 
-const CONNECTIONS = [
-  ['USER','ORDER','||','o{','размещает'],
-  ['USER','REVIEW','||','o{','пишет'],
-  ['USER','USER_SESSION','||','o{','создаёт'],
-  ['ORDER','ORDER_ITEM','||','|{','содержит'],
-  ['BOOK','ORDER_ITEM','||','o{','входит в'],
-  ['BOOK','REVIEW','||','o{','получает'],
-  ['CATEGORY','CATEGORY','|o','o{','иерархия'],
-  ['BOOK','BOOK_AUTHOR','||','|{','—'],
-  ['AUTHOR','BOOK_AUTHOR','||','o{','—'],
-  ['BOOK','BOOK_CATEGORY','||','|{','—'],
-  ['CATEGORY','BOOK_CATEGORY','||','o{','—'],
-  ['BOOK','STOCK','||','o{','хранится'],
-  ['WAREHOUSE','STOCK','||','o{','содержит'],
+const SMART_PATHS = [
+  { from: 'USER', to: 'USER_SESSION', path: 'M 145 275 L 145 215', card: ['one','zeroOrMany'] },
+  { from: 'USER', to: 'ORDER', path: 'M 250 372 L 380 372', card: ['one','zeroOrMany'] },
+  { from: 'USER', to: 'REVIEW', path: 'M 250 320 L 315 320 L 315 20 L 790 20 L 790 40', card: ['one','zeroOrMany'] },
+  { from: 'ORDER', to: 'ORDER_ITEM', path: 'M 485 470 L 485 540', card: ['one','oneOrMany'] },
+  { from: 'BOOK', to: 'ORDER_ITEM', path: 'M 740 530 L 740 620 L 590 620', card: ['one','zeroOrMany'] },
+  { from: 'BOOK', to: 'REVIEW', path: 'M 810 295 L 810 235', card: ['one','zeroOrMany'] },
+  { from: 'BOOK', to: 'BOOK_AUTHOR', path: 'M 950 330 L 1010 330 L 1010 110 L 1080 110', card: ['one','oneOrMany'] },
+  { from: 'BOOK', to: 'BOOK_CATEGORY', path: 'M 950 410 L 1080 410', card: ['one','oneOrMany'] },
+  { from: 'BOOK', to: 'STOCK', path: 'M 950 490 L 1030 490 L 1030 627 L 1080 627', card: ['one','zeroOrMany'] },
+  { from: 'AUTHOR', to: 'BOOK_AUTHOR', path: 'M 1400 110 L 1290 110', card: ['one','zeroOrMany'] },
+  { from: 'CATEGORY', to: 'BOOK_CATEGORY', path: 'M 1400 410 L 1290 410', card: ['one','zeroOrMany'] },
+  { from: 'WAREHOUSE', to: 'STOCK', path: 'M 1400 627 L 1290 627', card: ['one','zeroOrMany'] },
+  { from: 'CATEGORY', to: 'CATEGORY', path: 'M 1610 380 L 1660 380 L 1660 445 L 1610 445', card: ['zeroOrOne','zeroOrMany'] }
 ];
 
-function buildErMermaid() {
-  const roleKey = r => r === 'pk' ? 'PK' : r === 'uk' ? 'UK' : r === 'fk' ? 'FK' : r === 'pkfk' ? 'PK,FK' : '';
-  const quote = s => `"${String(s).replace(/"/g, "'")}"`;
-
-  let txt = '%%{init: {"er": {"layoutDirection": "LR", "minEntityWidth": 120, "minEntityHeight": 60, "entityPadding": 20, "useMaxWidth": false}}}%%\nerDiagram\n';
-  for (const ent of ENTITIES) {
-    txt += `  ${ent.label} {\n`;
-    for (const a of ent.attrs) {
-      const role = roleKey(a.role);
-      const comment = a.note ? ' ' + quote(a.note) : '';
-      txt += `    attr ${a.name}${role ? ' ' + role : ''}${comment}\n`;
-    }
-    txt += `  }\n`;
-  }
-  for (const [from, to, l, r] of CONNECTIONS) {
-    txt += `  ${from} ${l}--${r} ${to} : " "\n`;
-  }
-  return txt;
-}
-
-async function drawER() {
-  const target = document.getElementById('er-mermaid');
-  if (!target || typeof mermaid === 'undefined') return;
-  try {
-    const { svg } = await mermaid.render('er-mermaid-svg', buildErMermaid());
-    target.innerHTML = svg;
-    const svgEl = target.querySelector('svg');
-    if (svgEl) {
-      svgEl.style.minWidth = '1200px';
-      svgEl.style.width = '100%';
-      svgEl.style.height = 'auto';
-    }
-    const wrap = document.getElementById('er-svg-wrap');
-    setupErZoom(target);
-    if (wrap) setupErPan(wrap);
-  } catch (err) {
-    target.innerHTML = `<pre style="color:#f87171;padding:12px;white-space:pre-wrap">${err.message}</pre>`;
-  }
-}
-
-function setupErZoom(target) {
-  const wrap = document.getElementById('er-svg-wrap');
-  if (!wrap) return;
-  let scale = 1;
-  const step = 0.2;
-  const update = () => {
-    target.style.transform = `scale(${scale})`;
-    target.style.transformOrigin = 'top left';
-    const svgEl = target.querySelector('svg');
-    if (svgEl) wrap.style.minHeight = (svgEl.getBoundingClientRect().height * scale + 32) + 'px';
+function cardSymbol(px, py, ux, uy, kind) {
+  const vx = -uy, vy = ux;
+  const S = 'stroke="#334155" stroke-width="2" fill="none"';
+  const pt = (d, s) => [px - ux * d + vx * s, py - uy * d + vy * s];
+  const fmt = (xy) => xy.map(v => v.toFixed(1)).join(' ');
+  const bar = (d) => `<line x1="${pt(d,7)[0].toFixed(1)}" y1="${pt(d,7)[1].toFixed(1)}" x2="${pt(d,-7)[0].toFixed(1)}" y2="${pt(d,-7)[1].toFixed(1)}" ${S}/>`;
+  const circle = (d) => `<circle cx="${pt(d,0)[0].toFixed(1)}" cy="${pt(d,0)[1].toFixed(1)}" r="4" stroke="#334155" stroke-width="2" fill="#f8fafc"/>`;
+  const crow = () => {
+    const a = pt(16, 0);
+    return `<path d="M ${fmt(a)} L ${fmt(pt(1,7))} M ${fmt(a)} L ${fmt(pt(1,0))} M ${fmt(a)} L ${fmt(pt(1,-7))}" ${S}/>`;
   };
-  document.getElementById('er-zoom-in')   ?.addEventListener('click', () => { scale = Math.min(scale + step, 3);   update(); });
-  document.getElementById('er-zoom-out')  ?.addEventListener('click', () => { scale = Math.max(scale - step, 0.3); update(); });
-  document.getElementById('er-zoom-reset')?.addEventListener('click', () => { scale = 1; update(); });
+  switch (kind) {
+    case 'one':        return bar(9) + bar(15);
+    case 'zeroOrMany': return crow() + circle(23);
+    case 'oneOrMany':  return crow() + bar(22);
+    case 'zeroOrOne':  return bar(10) + circle(20);
+    default:           return bar(10);
+  }
 }
 
-function setupErPan(wrap) {
-  let dragging = false, x0 = 0, y0 = 0, sl = 0, st = 0;
-  wrap.style.cursor = 'grab';
-  wrap.addEventListener('mousedown', e => {
-    if (e.button !== 0) return;
-    dragging = true; x0 = e.clientX; y0 = e.clientY;
-    sl = wrap.scrollLeft; st = wrap.scrollTop;
-    wrap.style.cursor = 'grabbing';
-    e.preventDefault();
-  });
-  wrap.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    wrap.scrollLeft = sl - (e.clientX - x0);
-    wrap.scrollTop  = st - (e.clientY - y0);
-  });
-  const stop = () => { dragging = false; wrap.style.cursor = 'grab'; };
-  wrap.addEventListener('mouseup', stop);
-  wrap.addEventListener('mouseleave', stop);
+function pathPoints(d) {
+  const n = d.match(/-?\d+(?:\.\d+)?/g).map(Number);
+  const pts = [];
+  for (let i = 0; i < n.length - 1; i += 2) pts.push([n[i], n[i + 1]]);
+  return pts;
+}
+
+function unitTowards(a, b) {
+  let dx = a[0] - b[0], dy = a[1] - b[1];
+  const len = Math.hypot(dx, dy) || 1;
+  return [dx / len, dy / len];
+}
+
+function generatePureSvgER() {
+  let svg = `<svg viewBox="0 0 1700 740" width="100%" height="auto" preserveAspectRatio="xMinYMin meet" style="background:#f8fafc; font-family: system-ui, sans-serif;">
+    <defs>
+      <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"/>
+      </filter>
+    </defs>
+
+    <g id="connections">`;
+
+  for (const p of SMART_PATHS) {
+    const dash = p.from === p.to ? '6,4' : '0';
+    svg += `<path d="${p.path}" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="${dash}" />`;
+  }
+
+  svg += `</g>\n<g id="cardinality">`;
+  for (const p of SMART_PATHS) {
+    const pts = pathPoints(p.path);
+    if (pts.length < 2) continue;
+    const card = p.card || ['one', 'zeroOrMany'];
+    const s = pts[0], s2 = pts[1];
+    const [sux, suy] = unitTowards(s, s2);
+    svg += cardSymbol(s[0], s[1], sux, suy, card[0]);
+    const e = pts[pts.length - 1], e2 = pts[pts.length - 2];
+    const [eux, euy] = unitTowards(e, e2);
+    svg += cardSymbol(e[0], e[1], eux, euy, card[1]);
+  }
+
+  svg += `</g>\n<g id="entities">`;
+
+  for (const ent of ENTITIES) {
+    const headerBg = ent.type === 'assoc' ? '#0f766e' : ent.type === 'dep' ? '#1e3a8a' : '#0f172a';
+
+    svg += `
+    <g transform="translate(${ent.x}, ${ent.y})" filter="url(#shadow)">
+      <rect width="${ent.w}" height="${ent.h}" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+      <path d="M 0 8 A 8 8 0 0 1 8 0 L ${ent.w - 8} 0 A 8 8 0 0 1 ${ent.w} 8 L ${ent.w} 32 L 0 32 Z" fill="${headerBg}"/>
+      <text x="${ent.w / 2}" y="21" fill="#ffffff" font-size="13" font-weight="bold" text-anchor="middle" letter-spacing="0.5">${ent.label}</text>
+    `;
+
+    let currentY = 50;
+    const keys = ent.keys || [];
+    const attrs = ent.attrs || [];
+
+    for (const k of keys) {
+      const isPK = k.type === 'PK';
+      svg += `<text x="15" y="${currentY}" fill="#0f172a" font-size="12"
+        font-weight="${isPK ? '700' : '500'}"
+        text-decoration="${isPK ? 'underline' : 'none'}"
+        font-style="${isPK ? 'normal' : 'italic'}">${k.name}</text>`;
+      currentY += 20;
+    }
+
+    if (keys.length > 0 && attrs.length > 0) {
+      currentY += 2;
+      svg += `<line x1="14" y1="${currentY}" x2="${ent.w - 14}" y2="${currentY}" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>`;
+      currentY += 16;
+    }
+
+    for (const a of attrs) {
+      svg += `<text x="15" y="${currentY}" fill="#475569" font-size="12">${a.name}</text>`;
+      currentY += 20;
+    }
+
+    svg += `</g>`;
+  }
+
+  svg += `</g></svg>`;
+  return svg;
+}
+
+function drawER() {
+  const container = document.getElementById('er-interactive-container');
+  if (!container) return;
+  container.innerHTML = generatePureSvgER();
+  if (typeof makeZoomable === 'function') makeZoomable('er-svg-wrap', 'er');
 }

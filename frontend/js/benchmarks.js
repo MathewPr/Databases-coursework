@@ -36,7 +36,7 @@ function buildBenchmarks() {
   fetch('data/results.json')
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => renderRealResults(data))
-    .catch(() => { /* results.json not yet generated — placeholder stays */ });
+    .catch(() => {});
 }
 
 function renderRealResults(data) {

@@ -1,78 +1,126 @@
-const IDX_TYPES = [
+const IDX_CMP = [
   {
-    name: 'B-tree', icon: '🌲', color: '#1e40af', tagline: 'Сбалансированное дерево Lehman–Yao',
-    structure: 'Многоуровневое дерево, листья — двусвязный список',
-    ops: ['<', '<=', '=', '>=', '>', 'BETWEEN', 'IN', 'IS NULL', 'LIKE prefix%'],
-    useIn: ['users(email)', 'books(price)', 'books(publication_year)', 'orders(user_id)', 'orders(created_at)'],
-    limits: 'Не поддерживает LIKE "%...%", массивы, JSONB',
-    extras: 'INCLUDE (покрывающий), DESC/NULLS, дедупликация v13+',
+    name: 'B-tree', color: '#1e40af',
+    structure: 'Дерево с автоматической балансировкой; листья связаны в список для быстрого обхода диапазонов',
+    ops: ['=', '<', '<=', '>=', '>', 'BETWEEN', 'IN', 'IS NULL', 'LIKE prefix%'],
     eq: true, range: true, sort: true, multi: true, unique: true,
+    size: 'средний', overhead: 'низкий',
+    best: 'Точечные и диапазонные запросы на скалярных типах; покрывающие индексы (INCLUDE); сортировка',
+    limits: 'Не поддерживает LIKE "%...%", массивы, JSONB, полнотекстовый поиск',
+    schema: 'users(email), books(price), books(publication_year), orders(created_at)',
   },
   {
-    name: 'Hash', icon: '#', color: '#065f46', tagline: 'Расширяемое хеширование',
-    structure: 'Хеш-таблица; crash-safe с PostgreSQL 10+',
+    name: 'Hash', color: '#065f46',
+    structure: 'Хеш-таблица: значение → хеш → страница; не требует перестройки после сбоя (с PostgreSQL 10+)',
     ops: ['='],
-    useIn: ['users(email) — бенчмарк vs B-tree'],
-    limits: 'Только равенство; нет сортировки; нет составных; нет UNIQUE',
-    extras: 'Иногда меньше B-tree по размеру на длинных ключах',
     eq: true, range: false, sort: false, multi: false, unique: false,
+    size: 'меньше B-tree на длинных ключах', overhead: 'низкий',
+    best: 'Точечные запросы по равенству на длинных строках (email, UUID, хэши)',
+    limits: 'Только «=»; нет сортировки, составных индексов, UNIQUE; хуже B-tree на коротких ключах',
+    schema: 'users(email) — бенчмарк точечного поиска vs B-tree',
   },
   {
-    name: 'GiST', icon: '🌐', color: '#7c3aed', tagline: 'Обобщённое поисковое дерево',
-    structure: 'Фреймворк: тип определяет consistent/union/penalty/picksplit',
-    ops: ['&&', '<@', '@>', '<->', 'ILIKE (pg_trgm)', '@@ (FTS)'],
-    useIn: ['warehouses(location)', 'books(title) gist_trgm_ops'],
-    limits: 'Медленнее B-tree на простых типах; дороже поддержание',
-    extras: 'KNN-поиск (ORDER BY location <-> point), PostGIS, диапазоны',
-    eq: false, range: true, sort: false, multi: true, unique: false,
+    name: 'GiST', color: '#6d28d9',
+    structure: 'Гибкое дерево поиска: логику сравнения задаёт сам тип данных (точки, диапазоны, текст)',
+    ops: ['&&', '<@', '@>', '<->', 'ILIKE (pg_trgm)', '@@ (FTS)', 'диапазоны'],
+    eq: false, range: true, sort: true, multi: true, unique: false,
+    size: 'большой', overhead: 'высокий',
+    best: 'Геопространственные данные (PostGIS), KNN-поиск (<->), диапазонные типы, pg_trgm ILIKE',
+    limits: 'Медленнее B-tree на скалярах; дорогое обслуживание; нет UNIQUE',
+    schema: 'warehouses(location) KNN point, books(title) gist_trgm_ops',
   },
   {
-    name: 'SP-GiST', icon: '🗺', color: '#be185d', tagline: 'Пространственно-разбитое дерево',
-    structure: 'Несбалансированные деревья: quadtree, k-d tree, patricia-trie',
-    ops: ['<<', '>>', '&&', '<@', '@>', '= (inet)', 'text prefix'],
-    useIn: ['user_sessions(ip) inet_ops'],
-    limits: 'Нет составных; несбалансированность → худший случай хуже B-tree',
-    extras: 'Эффективен для иерархических/пространственных данных',
+    name: 'SP-GiST', color: '#be185d',
+    structure: 'Дерево, делящее пространство на непересекающиеся части; компактнее B-tree при разреженных данных',
+    ops: ['<<', '>>', '&&', '<@', '@>', '= (inet)', 'префикс текста'],
     eq: true, range: true, sort: false, multi: false, unique: false,
+    size: 'компактный', overhead: 'средний',
+    best: 'IP-сети (inet/cidr), иерархические и пространственные данные с низкой кардинальностью',
+    limits: 'Нет составных индексов; несбалансированность — худший случай хуже B-tree',
+    schema: 'user_sessions(ip) inet_ops',
   },
   {
-    name: 'GIN', icon: '📑', color: '#b45309', tagline: 'Обобщённый инвертированный индекс',
-    structure: 'Ключ → список TID строк; fastupdate буферизует вставки',
-    ops: ['@>', '<@', '&&', '@@ (tsvector)', '% (trgm)'],
-    useIn: ['books(fts)', 'books(tags)', 'books(metadata)', 'reviews(text)'],
-    limits: 'Медленная вставка/обновление; большой размер; нет диапазонов',
-    extras: 'gin_clean_pending_list; jsonb_path_ops компактнее jsonb_ops',
+    name: 'GIN', color: '#b45309',
+    structure: 'Инвертированный индекс: каждый элемент (слово, тег) → список строк, где он встречается',
+    ops: ['@>', '<@', '&&', '@@ (tsvector)', '% (trgm)', 'jsonb_path_ops'],
     eq: true, range: false, sort: false, multi: false, unique: false,
+    size: 'очень большой', overhead: 'очень высокий',
+    best: 'Полнотекстовый поиск (tsvector), массивы (text[]), JSONB, триграммный поиск (%)',
+    limits: 'Медленные INSERT/UPDATE; нет диапазонов; требует gin_clean_pending_list при fastupdate',
+    schema: 'books(fts), books(tags), books(metadata), reviews(text)',
   },
   {
-    name: 'BRIN', icon: '📦', color: '#0e7490', tagline: 'Диапазонные блочные сводки',
-    structure: 'Минимум/максимум для каждых N страниц (по умолч. 128)',
-    ops: ['<', '<=', '=', '>=', '>'],
-    useIn: ['orders(created_at) — временной ряд ≥10M строк'],
-    limits: 'Эффективен только при физической корреляции; не точный',
-    extras: 'Размер в десятки раз меньше B-tree; аналитические диапазоны',
+    name: 'BRIN', color: '#0e7490',
+    structure: 'Хранит минимум и максимум для каждых 128 страниц; почти не занимает место',
+    ops: ['=', '<', '<=', '>=', '>'],
     eq: false, range: true, sort: false, multi: false, unique: false,
+    size: 'крошечный (в 100× меньше B-tree)', overhead: 'минимальный',
+    best: 'Аналитические диапазоны по монотонным столбцам (временны́е ряды ≥10M строк)',
+    limits: 'Эффективен ТОЛЬКО при высокой физической корреляции данных; неточен — bitmap recheck',
+    schema: 'orders(created_at) — временной ряд',
   },
 ];
 
-
 function buildIndexes() {
-  const grid = document.getElementById('idx-grid');
-  for (const idx of IDX_TYPES) {
-    const card = document.createElement('div');
-    card.className = 'idx-card';
-    card.innerHTML = `
-      <div class="idx-header">
-        <div class="idx-icon" style="background:${idx.color}22;color:${idx.color};border:1px solid ${idx.color}44;">${idx.icon}</div>
-        <div><div class="idx-name">${idx.name}</div><div class="idx-tagline">${idx.tagline}</div></div>
-      </div>
-      <div class="idx-body">
-        <div class="idx-row"><div class="idx-label">Структура</div><div class="idx-value">${idx.structure}</div></div>
-        <div class="idx-row"><div class="idx-label">Операторы</div><div class="idx-tags">${idx.ops.map(o=>`<span class="idx-tag">${o}</span>`).join('')}</div></div>
-        <div class="idx-row"><div class="idx-label">Применение в схеме</div><div class="idx-value">${idx.useIn.map(u=>`<span style="font-family:monospace;font-size:0.8rem;color:#60a5fa">${u}</span>`).join('<br>')}</div></div>
-        <div class="idx-row"><div class="idx-label">Ограничения</div><div class="idx-use">${idx.limits}</div></div>
-        <div class="idx-row"><div class="idx-label">Особенности PG</div><div class="idx-use">${idx.extras}</div></div>
-      </div>`;
-    grid.appendChild(card);
+  const root = document.getElementById('idx-cmp');
+  if (!root) return;
+
+  const yes  = '<span class="check">✓</span>';
+  const no   = '<span class="cross">✗</span>';
+
+  let html = `
+    <h3 style="margin-bottom:12px;color:var(--text2);font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em">Характеристики</h3>
+    <div class="bench-compare-wrap" style="margin-bottom:28px">
+    <table class="bench-compare" style="min-width:900px">
+      <tr>
+        <th style="min-width:90px">Тип</th>
+        <th>Структура данных</th>
+        <th style="text-align:center" title="Поиск по равенству">=</th>
+        <th style="text-align:center" title="Диапазонный поиск">Диапазон</th>
+        <th style="text-align:center" title="Поддержка ORDER BY">Сортировка</th>
+        <th style="text-align:center" title="Составной индекс">Составной</th>
+        <th style="text-align:center" title="UNIQUE-ограничение">UNIQUE</th>
+        <th>Размер индекса</th>
+        <th>Накладные расходы DML</th>
+      </tr>`;
+
+  for (const r of IDX_CMP) {
+    html += `<tr>
+      <td style="font-weight:700;color:${r.color};font-family:monospace;white-space:nowrap">${r.name}</td>
+      <td style="font-size:0.78rem;color:var(--text2)">${r.structure}</td>
+      <td style="text-align:center">${r.eq    ? yes : no}</td>
+      <td style="text-align:center">${r.range ? yes : no}</td>
+      <td style="text-align:center">${r.sort  ? yes : no}</td>
+      <td style="text-align:center">${r.multi ? yes : no}</td>
+      <td style="text-align:center">${r.unique? yes : no}</td>
+      <td style="font-size:0.78rem;color:var(--text2)">${r.size}</td>
+      <td style="font-size:0.78rem;color:var(--text2)">${r.overhead}</td>
+    </tr>`;
   }
+  html += `</table></div>`;
+
+  html += `
+    <h3 style="margin-bottom:12px;color:var(--text2);font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em">Операторы, применение и ограничения</h3>
+    <div class="bench-compare-wrap" style="margin-bottom:28px">
+    <table class="bench-compare" style="min-width:1000px">
+      <tr>
+        <th style="min-width:90px">Тип</th>
+        <th>Поддерживаемые операторы</th>
+        <th>Когда применять</th>
+        <th>Ограничения</th>
+        <th>В схеме проекта</th>
+      </tr>`;
+
+  for (const r of IDX_CMP) {
+    html += `<tr>
+      <td style="font-weight:700;color:${r.color};font-family:monospace;white-space:nowrap">${r.name}</td>
+      <td style="font-size:0.78rem;font-family:monospace;color:var(--blue-light);max-width:180px">${r.ops.join(', ')}</td>
+      <td style="font-size:0.78rem;color:var(--text)">${r.best}</td>
+      <td style="font-size:0.78rem;color:var(--text2)">${r.limits}</td>
+      <td style="font-size:0.78rem;font-family:monospace;color:var(--teal)">${r.schema}</td>
+    </tr>`;
+  }
+  html += `</table></div>`;
+
+  root.innerHTML = html;
 }
